@@ -43,11 +43,13 @@ if (coordinator.register(curr_ip) < 0):
 print("[INFO] Successfully registered self.")
 
 @dispatcher.public
-def write_value(key, value):
+def write(key, value):
     global global_store
     global next_node
 
     global_store[key] = value
+    print(f'[INFO] Stored {key} : {value}')
+
     if next_node:
         rpc_client = RPCClient(
             JSONRPCProtocol(),
@@ -55,14 +57,17 @@ def write_value(key, value):
         )
 
         next_ = rpc_client.get_proxy()
-        if next_.write_value(key, value) == 0: ## ACK chain
+        if next_.write(key, value) == 0: ## ACK chain
             return 0
+
+        else:
+            return -1
 
     return 0
 
 
 @dispatcher.public
-def read_value(key):
+def read(key):
     global global_store
 
     if key in global_store.keys():

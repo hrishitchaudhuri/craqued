@@ -46,4 +46,23 @@ def register(c_addr):
     print("[INFO] Registered", c_addr, "as tail")
     return 0
 
+
+@dispatcher.public
+def get_write_server():
+    global nodes
+    
+    if nodes:
+        return nodes[0]
+    else:
+        return None
+
+
+@dispatcher.public
+def get_read_server():
+    global tail
+
+    if tail:
+        return tail
+    return None
+
 rpc_server.serve_forever()
