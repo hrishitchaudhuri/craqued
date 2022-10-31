@@ -32,12 +32,14 @@ def register(c_addr):
     nodes.append(c_addr)
 
     if tail:
+        print("Tail: ", tail)
         rpc_client = RPCClient(
-            JSONRPCProtocol,
-            ZmqClientTransport.create(ctx, tail)
+            JSONRPCProtocol(),
+            ZmqClientTransport.create(zmq.Context(), tail)
         )
 
         tail_server = rpc_client.get_proxy()
+
         tail_server.update_next(c_addr)
 
     tail = c_addr

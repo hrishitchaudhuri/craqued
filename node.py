@@ -1,4 +1,5 @@
 import sys
+import argparse
 
 import zmq
 from tinyrpc import RPCClient
@@ -7,13 +8,19 @@ from tinyrpc.protocols.jsonrpc import JSONRPCProtocol
 from tinyrpc.server import RPCServer
 from tinyrpc.transports.zmq import ZmqClientTransport, ZmqServerTransport
 
-curr_ip = 'tcp://127.0.0.1:5002'
+parser = argparse.ArgumentParser()
+parser.add_argument("-p", "--port", type=int, help="Port to run the coordinator process on.", default=5002)
+args = parser.parse_args()
+
+curr_ip = f'tcp://127.0.0.1:{args.port}'
 global_store = dict()
 next_node = None
 
-ctx = zmq.Context()
+s_ctx = zmq.Context()
+c_ctx = zmq.Context()
+
 dispatcher = RPCDispatcher()
-transport = ZmqServerTransport.create(ctx, curr_ip)
+transport = ZmqServerTransport.create(s_ctx, curr_ip)
 
 rpc_server = RPCServer(
     transport,
@@ -23,7 +30,7 @@ rpc_server = RPCServer(
 
 rpc_client = RPCClient(
     JSONRPCProtocol(),
-    ZmqClientTransport.create(ctx, 'tcp://127.0.0.1:5001')
+    ZmqClientTransport.create(c_ctx, 'tcp://127.0.0.1:5001')
 )
 
 # is_tail = False
@@ -37,11 +44,14 @@ print("[INFO] Successfully registered self.")
 
 @dispatcher.public
 def write_value(key, value):
+    global global_store
+    global next_node
+
     global_store[key] = value
     if next_node:
         rpc_client = RPCClient(
             JSONRPCProtocol(),
-            ZmqClientTransport.create(ctx, next_node)
+            ZmqClientTransport.create(zmq.Context(), next_node)
         )
 
         next_ = rpc_client.get_proxy()
@@ -53,37 +63,19 @@ def write_value(key, value):
 
 @dispatcher.public
 def read_value(key):
+    global global_store
+
     if key in global_store.keys():
         return global_store[key]
-    return -9999999
+    return -12
 
 
 @dispatcher.public
 def update_next(n_addr):
+    global next_node
+
     next_node = n_addr
     print("[INFO] Read server is now at", n_addr)
     return 0
 
 rpc_server.serve_forever()
-
-"""
-@dispatcher.public
-def rmtail():
-    if is_tail:
-        is_tail = False
-        print("[INFO] No longer servicing reads.")
-        return True
-
-    else:
-        return False
-
-@dispatcher.public
-def mktail():
-    if is_tail is False:
-        is_tail = True
-        print("[INFO] Registered", curr_ip, "as tail.")
-        return True
-
-    else:
-        return False
-"""

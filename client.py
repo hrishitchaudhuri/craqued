@@ -7,7 +7,7 @@ from tinyrpc.transports.zmq import ZmqClientTransport
 ctx = zmq.Context()
 rpc_client = RPCClient(
     JSONRPCProtocol(),
-    ZmqClientTransport.create(ctx, 'tcp://127.0.0.1:5001')
+    ZmqClientTransport.create(ctx, 'tcp://127.0.0.1:5200')
 )
 
 coordinator = rpc_client.get_proxy()
