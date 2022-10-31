@@ -1,5 +1,6 @@
 import sys
 import argparse
+import time
 
 import zmq
 from tinyrpc import RPCClient
@@ -78,9 +79,19 @@ def read(key):
 @dispatcher.public
 def update_next(n_addr):
     global next_node
+    global curr_ip
 
     next_node = n_addr
-    print("[INFO] Read server is now at", n_addr)
+    if next_node:
+        print("[INFO] Read server is now at", next_node)
+    else:
+        print("[INFO] Read server is now at", curr_ip)
     return 0
+
+
+@dispatcher.public
+def probe():
+    print(f'[INFO] Probe received at {time.time()}')
+    return True
 
 rpc_server.serve_forever()
