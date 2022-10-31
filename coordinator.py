@@ -22,32 +22,26 @@ rpc_server = RPCServer(
 
 @dispatcher.public
 def register(c_addr):
-    if (c_addr in nodes):
-        print("[ERR] Node already registered.")
+    global nodes
+    global tail
+
+    if c_addr in nodes:
+        print("[ERR] Address", c_addr, "already in use")
         return -1
 
-    if tail:        
+    nodes.append(c_addr)
+
+    if tail:
         rpc_client = RPCClient(
-            JSONRPCProtocol(),
+            JSONRPCProtocol,
             ZmqClientTransport.create(ctx, tail)
         )
 
         tail_server = rpc_client.get_proxy()
-        if (tail_server.rmtail() is False):
-            print("[ERR] Something has gone horribly wrong.")
-            return -2
+        tail_server.update_next(c_addr)
 
-    nodes.append(c_addr)
     tail = c_addr
-
-    rpc_client = RPCClient(
-        JSONRPCProtocol(),
-        ZmqClientTransport.create(ctx, tail)
-    )
-    
-    tail_server = rpc_client.get_proxy()
-    if (tail_server.mktail() is False):
-        print("[ERR] Tail server is already configured.")
-        return -3
-
+    print("[INFO] Registered", c_addr, "as tail")
     return 0
+
+rpc_server.serve_forever()
